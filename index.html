@@ -839,138 +839,107 @@
       }
     }
     // 🚀 Generate Lesson Plan using AI
-    async function generateLessonPlan() {
-      const v = id => document.getElementById(id).value;
-      const weekNum = v('weekNum');
-      if (!weekNum) {
-        alert("Please select a week number.");
-        return;
-      }
-      // ✅ Format Class as "BASIC 7"
-      const rawClass = v('class') || 'B7';
-      const classNum = rawClass.match(/\d+/);
-      const basicClass = classNum ? `BASIC ${classNum[0]}` : 'BASIC 7';
-      // Fill all output fields
-      document.getElementById('outputClass').textContent = basicClass;
-      document.getElementById('outputWeekNum').textContent = weekNum;
-      document.getElementById('outputClassSize').textContent = v('classSize');
-      document.getElementById('outputDuration').textContent = v('duration');
-      document.getElementById('outputLessonTitle').textContent = v('lessonTitle');
-      document.getElementById('outputDate').textContent = v('date');
-      document.getElementById('outputReferences').textContent = v('references');
-      document.getElementById('outputStrand').textContent = v('strand');
-      document.getElementById('outputSubStrand').textContent = v('subStrand');
-      document.getElementById('outputContentStandard').textContent = v('contentStandard');
-      document.getElementById('outputIndicator').textContent = v('indicator');
-      document.getElementById('outputPerformanceIndicator').textContent = v('performanceIndicator');
-      document.getElementById('outputCoreCompetencies').textContent = v('coreCompetencies');
-      // ✅ Set the Day in both header and table
-      const dayValue = v('day') || 'Not specified';
-      document.getElementById('outputDayInHeader').textContent = dayValue;
-      document.getElementById('outputDayInTable').textContent = dayValue;
-      document.getElementById('outputTlrs').textContent = v('tlrs');
-      // ✅ Replace header with selected district only (in output)
-      const district = v('district') || "WEEKLY LESSON PLAN";
-      document.getElementById('outputDistrictHeader').textContent = district;
-      // ✅ Phase 1: Starter
-      const starterText = generateStarter(v('keywords'));
-      document.getElementById('outputStarter').innerHTML = starterText;
-      // ✅ Build AI Prompt with Subject, Class, Exemplars, TLRs
-      const subject = v('subject') || "Science";
-      const exemplars = v('exemplars');
-      const tlrs = v('tlrs');
-      const prompt = `
-You are an expert Ghanaian lesson planner for ${subject}, Class ${basicClass}.
-The teacher has provided:
-T/L Resources: ${tlrs}
-Exemplars:
-${exemplars}
-Generate the following:
-PHASE 1: STARTER
-- Briefly introduce keywords using real-life examples.
-- Engage learners in brainstorming.
-PHASE 2: MAIN
-- Create exactly one Teacher-Learner Activity per exemplar.
-  * Start each with: "Using the TLR, [activity]"
-  * Use the T/L Resources naturally.
-  * Make the language appropriate for ${basicClass} learners.
-- After the activities, provide Explanatory Notes:
-  * A bold and underlined heading for each key concept.
-  * A clear, detailed explanation of the concept.
-  * Include real-life examples relevant to Ghanaian ${basicClass} students.
-  * Base it on the subject: ${subject}
-PHASE 3: REFLECTION
-- Generate exactly as many assessment questions as there are exemplars.
-- Each question must assess understanding from the activities and notes.
-- Must be professional, grammatically correct, and suitable for written assessment.
-- Must be numbered and formatted for printing.
-Format your response EXACTLY as:
-PHASE 1: STARTER
-Teacher introduces keywords (Producer, Consumer, etc.) using real-life examples.
-Learners brainstorm what they already know.
-PHASE 2: MAIN
-Using the TLR, guide learners to discuss the types of ecosystems.
-Using the TLR, show the food web chart and ask learners to identify producers and consumers.
-ECOSYSTEM
-An ecosystem is made up of living (biotic) and non-living (abiotic) components that interact in an environment. Examples include forest, aquatic, and desert ecosystems.
-FOOD CHAIN
-A food chain shows how energy is transferred from one organism to another. It starts with a producer (like grass), then a primary consumer (like a grasshopper), then a secondary consumer (like a frog).
-PHASE 3: REFLECTION
-1. Define an ecosystem.
-2. List two types of ecosystems.
-3. Draw and explain one simple food chain.
-`;
-      // ✅ Show loader and call backend
-      showLoader();
-      try {
-        const aiResponse = await getAiContent(prompt);
-        // Split response by phase
-        const phase1Match = aiResponse.match(/PHASE 1: STARTER([\s\S]*?)(?=PHASE 2: MAIN)/i);
-        const phase2Match = aiResponse.match(/PHASE 2: MAIN([\s\S]*?)(?=PHASE 3: REFLECTION)/i);
-        const phase3Match = aiResponse.match(/PHASE 3: REFLECTION([\s\S]*)/i);
-        // Phase 1: Starter
-        const phase1Text = phase1Match ? phase1Match[1].trim() : starterText;
-        document.getElementById('outputStarter').innerHTML = phase1Text.replace(/\n/g, '<br>');
-        // Phase 2: Main Activities + Notes
-        let mainHTML = "";
-        if (phase2Match) {
-          const lines = phase2Match[1].trim().split('\n').map(line => line.trim()).filter(line => line);
-          let inNotes = false;
-          let currentHeading = "";
-          lines.forEach(line => {
-            if (line.match(/^Using the TLR,/i)) {
-              mainHTML += line + "<br>";
-            } else if (line === line.toUpperCase() && line.length > 2 && !line.includes("PHASE")) {
-              currentHeading = line;
-              inNotes = true;
-              mainHTML += `<br><u><strong>${currentHeading}</strong></u><br>`;
-            } else if (inNotes && currentHeading) {
-              mainHTML += line + "<br>";
-            }
-          });
-        }
-        document.getElementById('outputMainActivities').innerHTML = mainHTML;
-        // Phase 3: Assessment
-        let assessmentHTML = "Through questions and answers, conclude the lesson.<br><br><strong>Assessment;</strong><br>";
-        if (phase3Match) {
-          const questions = phase3Match[1].trim().split('\n')
-            .filter(q => q.trim())
-            .map(q => q.replace(/^[0-9]+\.\s*/, '').trim())
-            .map((q, i) => `${i+1}. ${q}<br>`)
-            .join('');
-          assessmentHTML += questions;
-        } else {
-          assessmentHTML += "1. What did you learn today?<br>2. How can you apply this?<br>3. Any questions?";
-        }
-        document.getElementById('outputReflection').innerHTML = assessmentHTML;
-      } catch (e) {
-        alert(e.message);
-        console.error(e);
-      } finally {
-        hideLoader();
-        document.getElementById('lessonPlanOutput').style.display = 'block';
-      }
+async function generateLessonPlan() {
+  const v = id => document.getElementById(id).value;
+  const weekNum = v('weekNum');
+  if (!weekNum) {
+    alert("Please select a week number.");
+    return;
+  }
+
+  // ✅ Format Class as "BASIC 7"
+  const rawClass = v('class') || 'B7';
+  const classNum = rawClass.match(/\d+/);
+  const basicClass = classNum ? `BASIC ${classNum[0]}` : 'BASIC 7';
+
+  // Fill all output fields
+  document.getElementById('outputClass').textContent = basicClass;
+  document.getElementById('outputWeekNum').textContent = weekNum;
+  document.getElementById('outputClassSize').textContent = v('classSize');
+  document.getElementById('outputDuration').textContent = v('duration');
+  document.getElementById('outputLessonTitle').textContent = v('lessonTitle');
+  document.getElementById('outputDate').textContent = v('date');
+  document.getElementById('outputReferences').textContent = v('references');
+  document.getElementById('outputStrand').textContent = v('strand');
+  document.getElementById('outputSubStrand').textContent = v('subStrand');
+  document.getElementById('outputContentStandard').textContent = v('contentStandard');
+  document.getElementById('outputIndicator').textContent = v('indicator');
+  document.getElementById('outputPerformanceIndicator').textContent = v('performanceIndicator');
+  document.getElementById('outputCoreCompetencies').textContent = v('coreCompetencies');
+
+  // ✅ Set the Day in both header and table
+  const dayValue = v('day') || 'Not specified';
+  document.getElementById('outputDayInHeader').textContent = dayValue;
+  document.getElementById('outputDayInTable').textContent = dayValue;
+  document.getElementById('outputTlrs').textContent = v('tlrs');
+
+  // ✅ Replace header with selected district only (in output)
+  const district = v('district') || "WEEKLY LESSON PLAN";
+  document.getElementById('outputDistrictHeader').textContent = district;
+
+  // ✅ Send data to backend
+  const payload = {
+    class_level: basicClass,
+    lesson: v('lessonTitle'),
+    strand: v('strand'),
+    content_standard: v('contentStandard'),
+    performance_indicator: v('performanceIndicator'),
+    exemplars: v('exemplars'),
+    tlrs: v('tlrs'),
+    keywords: v('keywords')
+  };
+
+  showLoader();
+  try {
+    const response = await fetch("https://lesson-plan-on-render.onrender.com/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Backend Error: ${response.status} - ${errorText}`);
     }
+
+    const data = await response.json();
+
+    // ✅ Phase 1: Starter
+    document.getElementById('outputStarter').innerHTML = data.starter || "Discuss the keywords with learners.";
+
+    // ✅ Phase 2: Activities + Notes
+    let mainHTML = "";
+    if (data.activities && Array.isArray(data.activities)) {
+      data.activities.forEach((act, index) => {
+        mainHTML += `<p><strong>Activity ${index + 1}:</strong> ${act.activity}</p>`;
+        if (act.note) {
+          mainHTML += `<p><u><strong>Note:</strong></u> ${act.note}</p>`;
+        }
+      });
+
+      // ✅ After all notes, add assessment section
+      mainHTML += `<br><strong>Written Assessments:</strong><br>`;
+      data.activities.forEach((act, index) => {
+        if (act.assessment) {
+          mainHTML += `${index + 1}. ${act.assessment}<br>`;
+        }
+      });
+    }
+    document.getElementById('outputMainActivities').innerHTML = mainHTML;
+
+    // ✅ Phase 3: Reflection (one reflective question)
+    document.getElementById('outputReflection').innerHTML =
+      data.reflection || "Ask learners a reflective question to check their understanding.";
+
+  } catch (e) {
+    alert(e.message);
+    console.error(e);
+  } finally {
+    hideLoader();
+    document.getElementById('lessonPlanOutput').style.display = 'block';
+  }
+}
+
     // 🖨️ Print Plan
     function printPlan() {
       if (document.getElementById('lessonPlanOutput').style.display === 'none') {
