@@ -150,12 +150,15 @@
         line-height: 1.4;
         vertical-align: top;
         word-wrap: break-word;
+        height: 24pt;
       }
       .lesson-table th {
         background-color: #e6f0ff !important;
         font-weight: bold;
         text-align: center;
       }
+      .lesson-table .day-header { width: 8%; }
+      .lesson-table .starter { width: 12%; }
       .lesson-table .main { width: 60%; }
       .lesson-table .reflection { width: 20%; }
       .content {
@@ -172,7 +175,6 @@
         padding: 0;
       }
     }
-
     /* Welcome Page Styles */
     #welcomePage {
       display: flex;
@@ -255,15 +257,18 @@
     #welcomePage .contact-info a:hover {
       text-decoration: underline;
     }
-    #welcomePage .footer {
-      position: absolute;
-      bottom: 20px;
-      left: 20px;
-      font-size: 0.8rem;
-      opacity: 0.8;
-    }
     #mainApp {
       display: none;
+    }
+    /* Footer styling */
+    .global-footer {
+      text-align: center;
+      padding: 15px;
+      color: #0056b3;
+      font-size: 0.9rem;
+      margin-top: auto;
+      width: 100%;
+      background-color: white;
     }
   </style>
 </head>
@@ -281,7 +286,7 @@
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
           <path d="M6.625 4.938a1.875 1.875 0 0 1 1.875-1.875h9.75a1.875 1.875 0 0 1 1.875 1.875v14.25a1.875 1.875 0 0 1-1.875 1.875H8.5a1.875 1.875 0 0 1-1.875-1.875V4.938Zm1.875 0v.375a.375.375 0 0 0 .375.375h8.25a.375.375 0 0 0 .375-.375V4.938a.375.375 0 0 0-.375-.375h-8.25a.375.375 0 0 0-.375.375Zm8.25 1.875H8.5v8.25h8.25V6.813Z" />
         </svg>
-        <span>0532349709</span>
+        <span>+233532349709</span>
       </div>
       <div>
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
@@ -291,11 +296,7 @@
         <a href="mailto:g.clinton239@gmail.com">g.clinton239@gmail.com</a>
       </div>
     </div>
-    <div class="footer">
-      © 2025 Klint Lesson Plan Generator. All Rights Reserved.
-    </div>
   </div>
-
   <!-- Main Application -->
   <div id="mainApp">
     <div class="container">
@@ -730,40 +731,40 @@
         <table class="lesson-table">
           <!-- Header: Selected District replaces app title only in output -->
           <tr>
-            <th colspan="10" style="font-size:14pt;">
+            <th colspan="11" style="font-size:14pt;">
               <strong><span id="outputDistrictHeader">WEEKLY LESSON PLAN</span></strong>
             </th>
           </tr>
           <tr>
-            <th colspan="10"><span id="outputClass"></span></th>
+            <th colspan="11"><span id="outputClass"></span></th>
           </tr>
           <tr>
-            <th colspan="10">WEEK <span id="outputWeekNum"></span></th>
+            <th colspan="11">WEEK <span id="outputWeekNum"></span></th>
           </tr>
           <tr>
             <td colspan="2"><strong>Class size:</strong> <span id="outputClassSize"></span></td>
             <td colspan="2"><strong>Duration:</strong> <span id="outputDuration"></span></td>
             <td colspan="3"><strong>TLRs:</strong> <span id="outputTlrs"></span></td>
-            <td colspan="3"><strong>Date:</strong> <span id="outputDate"></span></td>
+            <td colspan="4"><strong>Date:</strong> <span id="outputDate"></span></td>
           </tr>
           <tr>
             <td colspan="2"><strong>Lesson:</strong> <span id="outputLessonTitle"></span></td>
-            <td colspan="2"><strong>Day:</strong> <span id="outputDay"></span></td>
-            <td colspan="6"><strong>Reference:</strong> <span id="outputReferences"></span></td>
+            <td colspan="2"><strong>Day:</strong> <span id="outputDayInHeader"></span></td>
+            <td colspan="7"><strong>Reference:</strong> <span id="outputReferences"></span></td>
           </tr>
           <tr>
-            <td colspan="3"><strong>Strand:</strong> <span id="outputStrand"></span></td>
+            <td colspan="4"><strong>Strand:</strong> <span id="outputStrand"></span></td>
             <td colspan="7"><strong>Sub-strand:</strong> <span id="outputSubStrand"></span></td>
           </tr>
           <tr>
-            <td colspan="3"><strong>Content standard:</strong> <span id="outputContentStandard"></span></td>
+            <td colspan="4"><strong>Content standard:</strong> <span id="outputContentStandard"></span></td>
             <td colspan="7"><strong>Indicator:</strong> <span id="outputIndicator"></span></td>
           </tr>
           <tr>
-            <td colspan="10"><strong>Performance Indicator:</strong> <span id="outputPerformanceIndicator"></span></td>
+            <td colspan="11"><strong>Performance Indicator:</strong> <span id="outputPerformanceIndicator"></span></td>
           </tr>
           <tr>
-            <td colspan="10"><strong>Core Competencies:</strong> <span id="outputCoreCompetencies"></span></td>
+            <td colspan="11"><strong>Core Competencies:</strong> <span id="outputCoreCompetencies"></span></td>
           </tr>
           <tr>
             <th class="day-header">DAY</th>
@@ -772,7 +773,7 @@
             <th colspan="2" class="reflection">PHASE 3 / REFLECTION</th>
           </tr>
           <tr>
-            <td><span id="outputDay"></span></td>
+            <td><span id="outputDayInTable"></span></td>
             <td class="content"><div id="outputStarter"></div></td>
             <td colspan="7" class="content"><div id="outputMainActivities"></div></td>
             <td colspan="2" class="content"><div id="outputReflection"></div></td>
@@ -780,22 +781,17 @@
         </table>
       </div>
     </div>
-    <!-- Footer -->
-    <div class="no-print">
-      <p style="color: #666; font-size: 9pt; text-align: center; margin: 20px 0;">
-        © 2025 | Empowering Ghanaian Educators
-      </p>
-    </div>
   </div>
-
+  <!-- Global Footer -->
+  <div class="global-footer">
+    © 2025 Klint Lesson Plan Generator. All Rights Reserved.
+  </div>
   <script>
     // Welcome Page Functionality
     document.getElementById('startButton').addEventListener('click', function() {
-      document.getElementById('welcomePage').style.display = 'block';
-      document.getElementById('mainApp').style.display = 'block';
       document.getElementById('welcomePage').style.display = 'none';
+      document.getElementById('mainApp').style.display = 'block';
     });
-
     const loader = document.getElementById('loader');
     const appHeader = document.getElementById('appHeader');
     function showLoader() { loader.style.display = 'block'; }
@@ -868,7 +864,10 @@
       document.getElementById('outputIndicator').textContent = v('indicator');
       document.getElementById('outputPerformanceIndicator').textContent = v('performanceIndicator');
       document.getElementById('outputCoreCompetencies').textContent = v('coreCompetencies');
-      document.getElementById('outputDay').textContent = v('day');
+      // ✅ Set the Day in both header and table
+      const dayValue = v('day') || 'Not specified';
+      document.getElementById('outputDayInHeader').textContent = dayValue;
+      document.getElementById('outputDayInTable').textContent = dayValue;
       document.getElementById('outputTlrs').textContent = v('tlrs');
       // ✅ Replace header with selected district only (in output)
       const district = v('district') || "WEEKLY LESSON PLAN";
