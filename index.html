@@ -817,35 +817,67 @@
       starter += "</ul>";
       return starter;
     }
-    // ✅ Send prompt to YOUR Flask backend
-    async function getAiContent(prompt) {
-      try {
-      const response = await fetch("https://lesson-plan-on-render.onrender.com/generate", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({ prompt: prompt })
-        });
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`Backend Error: ${response.status} - ${errorText}`);
-        }
-        const data = await response.json();
-        return data.content;
-      } catch (e) {
-        console.error("AI Request Failed:", e);
-        throw new Error("Could not reach your backend. Make sure 'python app.py' is running.");
-      }
+    // ✅ Send lesson data to Flask backend
+async function getAiContent(formData) {
+  try {
+    const response = await fetch("https://lesson-plan-backend.onrender.com/generate", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(formData)   // send all lesson fields, not just "prompt"
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Backend Error: ${response.status} - ${errorText}`);
     }
-    // 🚀 Generate Lesson Plan using AI
+
+    const data = await response.json();
+
+    // Always return structured output
+    return {
+      phase1: data.phase1 || "",
+      phase2: data.phase2 || "",
+      assessment: data.assessment || "",
+      phase3: data.phase3 || ""
+    };
+  } catch (e) {
+    console.error("AI Request Failed:", e);
+    throw new Error("Could not reach your backend. Make sure it’s running/deployed.");
+  }
+}
+
+  // 🚀 Generate Lesson Plan using AI
 async function generateLessonPlan() {
   const v = id => document.getElementById(id).value;
-  const weekNum = v('weekNum');
-  if (!weekNum) {
-    alert("Please select a week number.");
-    return;
+
+  // Collect lesson data from form fields
+  const formData = {
+    class_level: v("classLevel"),
+    lesson: v("lesson"),
+    strand: v("strand"),
+    content_standard: v("contentStandard"),
+    performance_indicator: v("performanceIndicator"),
+    exemplars: v("exemplars"),
+    tlrs: v("tlrs"),
+    duration: v("duration")
+  };
+
+  try {
+    // Send to backend and get AI content
+    const aiContent = await getAiContent(formData);
+
+    // Fill into your textareas/fields
+    document.getElementById("phase1").value = aiContent.phase1;
+    document.getElementById("phase2").value = aiContent.phase2;
+    document.getElementById("assessment").value = aiContent.assessment;
+    document.getElementById("phase3").value = aiContent.phase3;
+  } catch (e) {
+    console.error("Lesson Plan Generation Failed:", e);
+    alert("Something went wrong while generating the lesson plan. Check console for details.");
   }
+}
 
   // ✅ Format Class as "BASIC 7"
   const rawClass = v('class') || 'B7';
@@ -876,69 +908,38 @@ async function generateLessonPlan() {
   // ✅ Replace header with selected district only (in output)
   const district = v('district') || "WEEKLY LESSON PLAN";
   document.getElementById('outputDistrictHeader').textContent = district;
+  
+   try {
+    showLoader();
 
-  // ✅ Send data to backend
-  const payload = {
-    class_level: basicClass,
-    lesson: v('lessonTitle'),
-    strand: v('strand'),
-    content_standard: v('contentStandard'),
-    performance_indicator: v('performanceIndicator'),
-    exemplars: v('exemplars'),
-    tlrs: v('tlrs'),
-    keywords: v('keywords')
-  };
-
-  showLoader();
-  try {
-    const response = await fetch("https://lesson-plan-on-render.onrender.com/generate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Backend Error: ${response.status} - ${errorText}`);
-    }
-
-    const data = await response.json();
+    // Send to backend and get AI content
+    const aiContent = await getAiContent(formData);
 
     // ✅ Phase 1: Starter
-    document.getElementById('outputStarter').innerHTML = data.starter || "Discuss the keywords with learners.";
+    document.getElementById('outputStarter').innerHTML =
+      aiContent.phase1 || "Discuss the keywords with learners.";
 
-    // ✅ Phase 2: Activities + Notes
-    let mainHTML = "";
-    if (data.activities && Array.isArray(data.activities)) {
-      data.activities.forEach((act, index) => {
-        mainHTML += `<p><strong>Activity ${index + 1}:</strong> ${act.activity}</p>`;
-        if (act.note) {
-          mainHTML += `<p><u><strong>Note:</strong></u> ${act.note}</p>`;
-        }
-      });
+    // ✅ Phase 2: Main Activities + Notes
+    document.getElementById('outputMainActivities').innerHTML =
+      aiContent.phase2 || "No activities generated.";
 
-      // ✅ After all notes, add assessment section
-      mainHTML += `<br><strong>Written Assessments:</strong><br>`;
-      data.activities.forEach((act, index) => {
-        if (act.assessment) {
-          mainHTML += `${index + 1}. ${act.assessment}<br>`;
-        }
-      });
-    }
-    document.getElementById('outputMainActivities').innerHTML = mainHTML;
+    // ✅ Assessment Section
+    document.getElementById('outputAssessment').innerHTML =
+      aiContent.assessment || "No assessment generated.";
 
-    // ✅ Phase 3: Reflection (one reflective question)
+    // ✅ Phase 3: Reflection
     document.getElementById('outputReflection').innerHTML =
-      data.reflection || "Ask learners a reflective question to check their understanding.";
+      aiContent.phase3 || "Ask learners a reflective question to check their understanding.";
+
+    document.getElementById('lessonPlanOutput').style.display = 'block';
 
   } catch (e) {
     alert(e.message);
     console.error(e);
   } finally {
     hideLoader();
-    document.getElementById('lessonPlanOutput').style.display = 'block';
   }
-}
+
 
     // 🖨️ Print Plan
     function printPlan() {
