@@ -192,7 +192,7 @@
       margin-bottom: 20px;
     }
     #welcomePage .logo-container img {
-      height: 150px;
+      height: 200px;
       width: auto;
       filter: drop-shadow(0 4px 6px rgba(0,0,0,0.2));
     }
@@ -274,7 +274,7 @@
 <body>
   <div id="welcomePage">
     <div class="logo-container">
-      <img src="Logo.png" alt="Logo" style="height: 150px; width: auto;" onerror="this.style.display='none'">
+      <img src="Logo.png" alt="Logo" style="height: 200px; width: auto;" onerror="this.style.display='none'">
     </div>
     <h1>Welcome, Facilitator!</h1>
     <p>click the button Below to begin!</p>
@@ -779,6 +779,7 @@
     // ✅ Send plan data to YOUR Flask backend
     async function generateAIPlan(payload) {
       try {
+        // Corrected URL and Endpoint
         const response = await fetch("https://lesson-plan-on-render.onrender.com/generate", {
             method: "POST",
             headers: {
@@ -794,7 +795,8 @@
           return data; // Returns the full JSON object: {phase1, phase2, assessment, phase3} or {content} if fallback
       } catch (e) {
         console.error("AI Request Failed:", e);
-        throw new Error("Could not reach your backend. Make sure the backend server is running and accessible.");
+        // Corrected error message to reflect deployment issue
+        throw new Error("Could not reach your backend. Check the network connection or ensure the Render server is healthy.");
       }
     }
 
@@ -846,7 +848,7 @@
           tlrs: v('tlrs'),
           duration: totalDuration,
           subject: v('subject') || "Science",
-          keywords: v('keywords') // Still pass keywords to AI for generation
+          keywords: v('keywords') 
       };
 
       // --- 3. Call Backend and Process Structured Response ---
@@ -854,13 +856,16 @@
       try {
         const aiData = await generateAIPlan(payload);
 
-        let phase1Content = "Error: AI content not found."; // Set a clean default error
+        let phase1Content = "Error: AI content not found."; 
         let mainContent = "Content generation failed.";
         let reflectionContent = "Assessment and Reflection generation failed.";
         
         // Function to format Phase 2 content
         const formatPhase2 = (content) => {
             let html = "";
+            // Ensure content is a string before splitting
+            if (typeof content !== 'string') return "Invalid Phase 2 data.";
+            
             const lines = content.split('\n').map(line => line.trim()).filter(line => line);
             let inNotes = false;
             let currentHeading = "";
@@ -868,16 +873,23 @@
                 // If line starts with a number followed by a period (e.g., 1. Activity)
                 if (line.match(/^[0-9]+\.\s/)) {
                   html += line + "<br>";
+                  inNotes = false; // Reset notes flag
                 } 
                 // Simple check for an ALL CAPS line which might be a heading (NOTES)
-                else if (line === line.toUpperCase() && line.length > 2 && !line.includes("PHASE")) {
+                else if (line === line.toUpperCase() && line.length > 2 && !line.includes("PHASE") && !line.includes("NOTE")) {
                   currentHeading = line;
                   inNotes = true;
                   html += `<br><u><strong>${currentHeading}</strong></u><br>`;
                 } 
-                // Content under the Notes heading
-                else if (inNotes) {
-                  html += line + "<br>";
+                // Content under the Notes heading (including lines starting with NOTES)
+                else if (inNotes || line.toUpperCase().startsWith("NOTES")) {
+                  // If it's the actual NOTES heading line
+                  if (line.toUpperCase().startsWith("NOTES")) {
+                      html += `<br><u><strong>${line.toUpperCase()}</strong></u><br>`;
+                      inNotes = true;
+                  } else {
+                      html += line + "<br>";
+                  }
                 }
             });
             return html;
@@ -908,30 +920,11 @@
             }
 
         } else if (aiData.content) {
-             // Fallback: Handle raw text output if AI failed to produce JSON
-             const raw_output = aiData.content;
-             
-             const phase1Match = raw_output.match(/PHASE 1: STARTER([\s\S]*?)(?=PHASE 2: MAIN)/i);
-             const phase2Match = raw_output.match(/PHASE 2: MAIN([\s\S]*?)(?=PHASE 3: REFLECTION)/i);
-             const phase3Match = raw_output.match(/PHASE 3: REFLECTION([\s\S]*)/i);
-             
-             if (phase1Match) { phase1Content = phase1Match[1].trim(); } else { phase1Content = "Phase 1 content not found in raw response."; }
-             if (phase2Match) { mainContent = phase2Match[1].trim(); }
-
-             let tempAssessmentHTML = "Through questions and answers, conclude the lesson.<br><br><strong>Assessment;</strong><br>";
-             if (phase3Match) {
-               const questions = phase3Match[1].trim().split('\n')
-                 .filter(q => q.trim())
-                 .map(q => q.replace(/^[0-9]+\.\s*/, '').trim())
-                 .map((q, i) => `${i+1}. ${q}<br>`)
-                 .join('');
-               tempAssessmentHTML += questions;
-             } else {
-               tempAssessmentHTML += "1. What did you learn today?<br>2. How can you apply this?<br>3. Any questions?";
-             }
-             reflectionContent = tempAssessmentHTML;
+             // Fallback: This block is usually for raw text output if JSON fails.
+             // Given the strict backend format, this is mostly for diagnostics now.
+             throw new Error("AI returned raw, unstructured content. Please check the AI configuration for JSON output.");
         } else {
-            throw new Error("AI returned an unreadable response format.");
+            throw new Error("AI returned an unreadable or empty response format.");
         }
 
 
