@@ -270,9 +270,66 @@
       width: 100%;
       background-color: white;
     }
+    /* Custom Modal for Clear Form */
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+        display: none;
+    }
+    .modal-content {
+        background: #fff;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        text-align: center;
+        max-width: 350px;
+    }
+    .modal-content h3 {
+        color: #dc3545;
+        margin-top: 0;
+        font-size: 1.2rem;
+    }
+    .modal-actions {
+        margin-top: 20px;
+        display: flex;
+        justify-content: space-around;
+    }
+    .modal-actions button {
+        padding: 8px 15px;
+        font-weight: bold;
+        border-radius: 5px;
+    }
+    #modalConfirm {
+        background-color: #dc3545;
+        color: white;
+    }
+    #modalCancel {
+        background-color: #f0f0f0;
+        color: #333;
+    }
   </style>
 </head>
 <body>
+  <!-- Custom Modal for Confirmation (replaces confirm()) -->
+  <div id="clearConfirmModal" class="modal-overlay">
+      <div class="modal-content">
+          <h3>Confirm Clear</h3>
+          <p>Are you sure you want to clear all form fields?</p>
+          <div class="modal-actions">
+              <button id="modalConfirm">Clear All</button>
+              <button id="modalCancel">Cancel</button>
+          </div>
+      </div>
+  </div>
+
   <!-- Welcome Page -->
   <div id="welcomePage">
     <div class="logo-container">
@@ -717,11 +774,12 @@
         </div>
         <!-- Buttons -->
         <div class="button-group">
-          <button id="generateBtn" onclick="handleAction(generateLessonPlan)">Generate Plan</button>
-          <button id="printBtn" onclick="handleAction(printPlan)">Print Plan</button>
-          <button id="saveBtn" onclick="handleAction(savePlan)">Save Plan</button>
-          <button id="loadBtn" onclick="handleAction(loadLastPlan)">Load Last Plan</button>
-          <button id="clearBtn" onclick="handleAction(clearForm)">Clear Form</button>
+          <!-- Removed handleAction() wrapper for simplicity and global access -->
+          <button id="generateBtn" onclick="generateLessonPlan()">Generate Plan</button>
+          <button id="printBtn" onclick="printPlan()">Print Plan</button>
+          <button id="saveBtn" onclick="savePlan()">Save Plan</button>
+          <button id="loadBtn" onclick="loadLastPlan()">Load Last Plan</button>
+          <button id="clearBtn" onclick="showClearConfirm()">Clear Form</button>
         </div>
         <!-- Loading Indicator -->
         <div id="loader"></div>
@@ -787,159 +845,129 @@
     © 2025 Klint Lesson Plan Generator. All Rights Reserved.
   </div>
   <script>
-    // Welcome Page Functionality
-    document.getElementById('startButton').addEventListener('click', function() {
-      document.getElementById('welcomePage').style.display = 'none';
-      document.getElementById('mainApp').style.display = 'block';
-    });
+    // Define global variables for re-use
     const loader = document.getElementById('loader');
-    const appHeader = document.getElementById('appHeader');
+    // Global helper function to safely get element value
+    const v = id => document.getElementById(id)?.value || '';
+
+    // --- HELPER FUNCTIONS (Globally Accessible) ---
     function showLoader() { loader.style.display = 'block'; }
     function hideLoader() { loader.style.display = 'none'; }
-    function handleAction(actionFn) {
-      showLoader();
-      setTimeout(() => {
-        try { actionFn(); }
-        catch (e) { console.error(e); }
-        finally { setTimeout(hideLoader, 300); }
-      }, 100);
+    
+    // Custom Clear Form Modal Handlers (Replaces browser's confirm())
+    function showClearConfirm() {
+        document.getElementById('clearConfirmModal').style.display = 'flex';
     }
-    // 🚀 Generate Phase 1 (Starter) based on Keywords
-    function generateStarter(keywords) {
-      if (!keywords || keywords.trim() === '') {
-        return "Discuss the meanings of keywords and terminologies in the lesson.";
-      }
-      const keywordList = keywords.split(',').map(k => k.trim()).filter(k => k !== '');
-      let starter = "Discuss the meanings of keywords and terminologies in the lesson.<br><br><strong>Keywords:</strong><ul>";
-      keywordList.forEach(k => {
-        starter += `<li>${k}</li>`;
-      });
-      starter += "</ul>";
-      return starter;
-    }
-    // ✅ Send lesson data to Flask backend
-async function getAiContent(formData) {
-  try {
-    const response = await fetch("https://lesson-plan-backend.onrender.com/generate", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(formData)   // send all lesson fields, not just "prompt"
+    document.getElementById('modalCancel').addEventListener('click', function() {
+        document.getElementById('clearConfirmModal').style.display = 'none';
+    });
+    document.getElementById('modalConfirm').addEventListener('click', function() {
+        clearForm();
+        document.getElementById('clearConfirmModal').style.display = 'none';
+        // Using alert here as per previous context, but generally prefer custom UI
+        alert("✅ Form fields cleared!"); 
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Backend Error: ${response.status} - ${errorText}`);
+
+    // --- CORE ACTION FUNCTIONS (Globally Accessible) ---
+    
+    // ✅ Send lesson data to Flask backend
+    async function getAiContent(formData) {
+      try {
+        const response = await fetch("https://lesson-plan-on-render.onrender.com", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(formData)
+        });
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Backend Error: ${response.status} - ${errorText}`);
+        }
+        const data = await response.json();
+        return {
+          phase1: data.phase1 || "",
+          phase2: data.phase2 || "",
+          assessment: data.assessment || "",
+          phase3: data.phase3 || ""
+        };
+      } catch (e) {
+        console.error("AI Request Failed:", e);
+        throw new Error("Could not reach your backend. Make sure it’s running/deployed.");
+      }
     }
 
-    const data = await response.json();
+    // 🚀 Generate Lesson Plan using AI
+    async function generateLessonPlan() {
+      showLoader();
+      
+      const weekNum = v('weekNum');
 
-    // Always return structured output
-    return {
-      phase1: data.phase1 || "",
-      phase2: data.phase2 || "",
-      assessment: data.assessment || "",
-      phase3: data.phase3 || ""
-    };
-  } catch (e) {
-    console.error("AI Request Failed:", e);
-    throw new Error("Could not reach your backend. Make sure it’s running/deployed.");
-  }
-}
+      // Collect lesson data from form fields.
+      const formData = {
+        class_level: v("class"), 
+        lesson: v("lessonTitle"), 
+        strand: v("strand"),
+        content_standard: v("contentStandard"),
+        performance_indicator: v("performanceIndicator"),
+        exemplars: v("exemplars"),
+        tlrs: v("tlrs"),
+        duration: v("duration")
+      };
 
-  // 🚀 Generate Lesson Plan using AI
-async function generateLessonPlan() {
-  const v = id => document.getElementById(id).value;
+      try {
+        // 1. Send to backend and get AI content
+        const aiContent = await getAiContent(formData);
+        
+        // 2. Format Class as "BASIC 7" and collect other necessary variables
+        const rawClass = v('class') || 'B7';
+        const classNum = rawClass.match(/\d+/);
+        const basicClass = classNum ? `BASIC ${classNum[0]}` : 'BASIC 7';
 
-  // Collect lesson data from form fields
-  const formData = {
-    class_level: v("classLevel"),
-    lesson: v("lesson"),
-    strand: v("strand"),
-    content_standard: v("contentStandard"),
-    performance_indicator: v("performanceIndicator"),
-    exemplars: v("exemplars"),
-    tlrs: v("tlrs"),
-    duration: v("duration")
-  };
+        // 3. Fill all static output fields
+        document.getElementById('outputClass').textContent = basicClass;
+        document.getElementById('outputWeekNum').textContent = weekNum;
+        document.getElementById('outputClassSize').textContent = v('classSize');
+        document.getElementById('outputDuration').textContent = v('duration');
+        document.getElementById('outputLessonTitle').textContent = v('lessonTitle');
+        document.getElementById('outputDate').textContent = v('date');
+        document.getElementById('outputReferences').textContent = v('references');
+        document.getElementById('outputStrand').textContent = v('strand');
+        document.getElementById('outputSubStrand').textContent = v('subStrand');
+        document.getElementById('outputContentStandard').textContent = v('contentStandard');
+        document.getElementById('outputIndicator').textContent = v('indicator');
+        document.getElementById('outputPerformanceIndicator').textContent = v('performanceIndicator');
+        document.getElementById('outputCoreCompetencies').textContent = v('coreCompetencies');
 
-  try {
-    // Send to backend and get AI content
-    const aiContent = await getAiContent(formData);
+        // 4. Set the Day in both header and table
+        const dayValue = v('day') || 'Not specified';
+        document.getElementById('outputDayInHeader').textContent = dayValue;
+        document.getElementById('outputDayInTable').textContent = dayValue;
+        document.getElementById('outputTlrs').textContent = v('tlrs');
 
-    // Fill into your textareas/fields
-    document.getElementById("phase1").value = aiContent.phase1;
-    document.getElementById("phase2").value = aiContent.phase2;
-    document.getElementById("assessment").value = aiContent.assessment;
-    document.getElementById("phase3").value = aiContent.phase3;
-  } catch (e) {
-    console.error("Lesson Plan Generation Failed:", e);
-    alert("Something went wrong while generating the lesson plan. Check console for details.");
-  }
-}
+        // 5. Replace header with selected district only (in output)
+        const district = v('district') || "WEEKLY LESSON PLAN";
+        document.getElementById('outputDistrictHeader').textContent = district;
 
-  // ✅ Format Class as "BASIC 7"
-  const rawClass = v('class') || 'B7';
-  const classNum = rawClass.match(/\d+/);
-  const basicClass = classNum ? `BASIC ${classNum[0]}` : 'BASIC 7';
+        // 6. Fill AI-generated content (Phase 1, Phase 2, Phase 3)
+        document.getElementById('outputStarter').innerHTML =
+          aiContent.phase1 || "Discuss the keywords with learners.";
 
-  // Fill all output fields
-  document.getElementById('outputClass').textContent = basicClass;
-  document.getElementById('outputWeekNum').textContent = weekNum;
-  document.getElementById('outputClassSize').textContent = v('classSize');
-  document.getElementById('outputDuration').textContent = v('duration');
-  document.getElementById('outputLessonTitle').textContent = v('lessonTitle');
-  document.getElementById('outputDate').textContent = v('date');
-  document.getElementById('outputReferences').textContent = v('references');
-  document.getElementById('outputStrand').textContent = v('strand');
-  document.getElementById('outputSubStrand').textContent = v('subStrand');
-  document.getElementById('outputContentStandard').textContent = v('contentStandard');
-  document.getElementById('outputIndicator').textContent = v('indicator');
-  document.getElementById('outputPerformanceIndicator').textContent = v('performanceIndicator');
-  document.getElementById('outputCoreCompetencies').textContent = v('coreCompetencies');
+        document.getElementById('outputMainActivities').innerHTML =
+          aiContent.phase2 || "No activities generated.";
+            
+        document.getElementById('outputReflection').innerHTML =
+          aiContent.phase3 || "Ask learners a reflective question to check their understanding.";
 
-  // ✅ Set the Day in both header and table
-  const dayValue = v('day') || 'Not specified';
-  document.getElementById('outputDayInHeader').textContent = dayValue;
-  document.getElementById('outputDayInTable').textContent = dayValue;
-  document.getElementById('outputTlrs').textContent = v('tlrs');
+        // 7. Show the output section
+        document.getElementById('lessonPlanOutput').style.display = 'block';
 
-  // ✅ Replace header with selected district only (in output)
-  const district = v('district') || "WEEKLY LESSON PLAN";
-  document.getElementById('outputDistrictHeader').textContent = district;
-  
-   try {
-    showLoader();
-
-    // Send to backend and get AI content
-    const aiContent = await getAiContent(formData);
-
-    // ✅ Phase 1: Starter
-    document.getElementById('outputStarter').innerHTML =
-      aiContent.phase1 || "Discuss the keywords with learners.";
-
-    // ✅ Phase 2: Main Activities + Notes
-    document.getElementById('outputMainActivities').innerHTML =
-      aiContent.phase2 || "No activities generated.";
-
-    // ✅ Assessment Section
-    document.getElementById('outputAssessment').innerHTML =
-      aiContent.assessment || "No assessment generated.";
-
-    // ✅ Phase 3: Reflection
-    document.getElementById('outputReflection').innerHTML =
-      aiContent.phase3 || "Ask learners a reflective question to check their understanding.";
-
-    document.getElementById('lessonPlanOutput').style.display = 'block';
-
-  } catch (e) {
-    alert(e.message);
-    console.error(e);
-  } finally {
-    hideLoader();
-  }
-
+      } catch (e) {
+        alert(e.message);
+        console.error(e);
+      } finally {
+        hideLoader();
+      }
+    }
 
     // 🖨️ Print Plan
     function printPlan() {
@@ -949,17 +977,19 @@ async function generateLessonPlan() {
       }
       window.print();
     }
+    
     // 💾 Save Plan
     function savePlan() {
       const data = {};
       ['class', 'subject', 'day', 'date', 'weekNum', 'lessonTitle', 'period', 'classSize', 'duration',
-       'strand', 'subStrand', 'contentStandard', 'indicator', 'performanceIndicator', 'coreCompetencies',
-       'keywords', 'exemplars', 'tlrs', 'references', 'district'].forEach(id => {
-        data[id] = document.getElementById(id).value;
+      'strand', 'subStrand', 'contentStandard', 'indicator', 'performanceIndicator', 'coreCompetencies',
+      'keywords', 'exemplars', 'tlrs', 'references', 'district'].forEach(id => {
+        data[id] = v(id);
       });
       localStorage.setItem('klintSavedPlan', JSON.stringify(data));
       alert("✅ Lesson plan saved!");
     }
+    
     // 📥 Load Last Plan
     function loadLastPlan() {
       const saved = localStorage.getItem('klintSavedPlan');
@@ -974,13 +1004,27 @@ async function generateLessonPlan() {
       });
       alert("✅ Last plan loaded!");
     }
+    
     // 🧹 Clear Form
     function clearForm() {
-      if (confirm("Clear all fields?")) {
         document.querySelectorAll('input, textarea').forEach(el => el.value = '');
         document.getElementById('lessonPlanOutput').style.display = 'none';
-      }
     }
+
+
+    // --- WELCOME PAGE STARTUP LOGIC (Runs when script loads at end of body) ---
+    const startButton = document.getElementById('startButton');
+    if (startButton) {
+      startButton.addEventListener('click', function() {
+        document.getElementById('welcomePage').style.display = 'none';
+        document.getElementById('mainApp').style.display = 'block';
+      });
+    }
+
+    // --- DOM CONTENT LOADED (Only for listeners attached to the modal/other elements if needed) ---
+    document.addEventListener('DOMContentLoaded', () => { 
+        // Any other non-global listeners can go here if needed.
+    }); // End of DOMContentLoaded listener
   </script>
 </body>
 </html>
