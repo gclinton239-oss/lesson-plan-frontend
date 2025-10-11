@@ -867,79 +867,70 @@
       ? Object.values(aiData.phase1).join("<br>")
       : aiData.phase1;
 
-  // ✅ Enhanced Phase 2 Display — handles nested activities, no duration
+  // ✅ Clean and well-formatted Phase 2 display (no duration)
 let mainContent = "";
 
-// Check if phase2 has "activities" array
 if (
   aiData.phase2 &&
   typeof aiData.phase2 === "object" &&
   Array.isArray(aiData.phase2.activities)
 ) {
+  // Loop through each activity
   mainContent = aiData.phase2.activities
-    .map((item, index) => {
-      if (typeof item === "object" && item !== null) {
-        const activity =
-          item.activity ||
-          item.title ||
-          item.step ||
-          item.name ||
-          `Activity ${index + 1}`;
+    .map((activityObj, index) => {
+      const activityText =
+        activityObj.activity ||
+        activityObj.title ||
+        activityObj.step ||
+        activityObj.name ||
+        `Activity ${index + 1}`;
 
-        let notesHeading = "";
-        let notesContent = "";
-        if (item.notes && typeof item.notes === "object") {
-          notesHeading = item.notes.heading
-            ? `<h4 style="margin-top:8px;">${item.notes.heading}</h4>`
-            : "";
-          notesContent = item.notes.content
-            ? `<p>${item.notes.content.replace(/\n/g, "<br>")}</p>`
-            : "";
-        }
+      let notesHeading = "";
+      let notesContent = "";
 
-        const extraDetails =
-          item.details ||
-          item.description ||
-          item.content ||
-          "";
-
-        return `
-          <div style="margin-bottom: 16px; line-height: 1.6;">
-            <strong>${index + 1}. ${activity}</strong><br>
-            ${notesHeading}
-            ${notesContent}
-            ${
-              extraDetails
-                ? `<div style="margin-top:6px;">${extraDetails.replace(
-                    /\n/g,
-                    "<br>"
-                  )}</div>`
-                : ""
-            }
-          </div>
-        `;
-      } else {
-        return `<p><strong>${index + 1}.</strong> ${item}</p>`;
+      if (activityObj.notes && typeof activityObj.notes === "object") {
+        notesHeading = activityObj.notes.heading
+          ? `<h4 style="margin:6px 0 4px;">${activityObj.notes.heading}</h4>`
+          : "";
+        notesContent = activityObj.notes.content
+          ? `<p style="margin:0 0 8px;">${activityObj.notes.content.replace(
+              /\n/g,
+              "<br>"
+            )}</p>`
+          : "";
       }
+
+      return `
+        <div style="margin-bottom:14px; line-height:1.6;">
+          <strong>${index + 1}. ${activityText}</strong><br>
+          ${notesHeading}
+          ${notesContent}
+        </div>
+      `;
     })
     .join("");
-}
-// If phase2 itself is an array
-else if (Array.isArray(aiData.phase2)) {
+} else if (Array.isArray(aiData.phase2)) {
+  // Handle simple array fallback
   mainContent = aiData.phase2
-    .map((item, index) => `<p><strong>${index + 1}.</strong> ${JSON.stringify(item)}</p>`)
+    .map(
+      (item, index) =>
+        `<p><strong>${index + 1}.</strong> ${
+          typeof item === "string" ? item : JSON.stringify(item)
+        }</p>`
+    )
     .join("");
-}
-// Otherwise fallback
-else {
+} else if (typeof aiData.phase2 === "object") {
+  // Remove duration if present
+  const { duration, ...rest } = aiData.phase2;
+  mainContent = Object.entries(rest)
+    .map(([key, val]) => `<strong>${key}:</strong> ${JSON.stringify(val)}`)
+    .join("<br>");
+} else {
   mainContent = aiData.phase2 || "No main phase generated.";
 }
 
-// ✅ Display nicely
+// ✅ Display in HTML
 document.getElementById("outputMainActivities").innerHTML = mainContent;
-
-
-
 
 // ✅ Phase 3 content
 const reflectionContent =
