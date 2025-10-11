@@ -861,38 +861,47 @@
 
       // ✅ Handle structured response
       if (aiData.phase1 && aiData.phase2 && aiData.phase3) {
-        const phase1Content = typeof aiData.phase1 === "object" 
-          ? Object.values(aiData.phase1).join("<br>") 
-          : aiData.phase1;
+  // Phase 1
+  const phase1Content =
+    typeof aiData.phase1 === "object"
+      ? Object.values(aiData.phase1).join("<br>")
+      : aiData.phase1;
 
-        let mainContent = "";
+  // ✅ Fix for Phase 2 (handles array, object, or text)
+  let mainContent = "";
+  if (Array.isArray(aiData.phase2)) {
+    mainContent = aiData.phase2.map((step, i) => {
+      if (typeof step === "object") {
+        const activity =
+          step.activity || step.step || step.title || step.name || `Step ${i + 1}`;
+        const notes =
+          step.notes || step.details || step.description || "";
+        return `
+          <div style="margin-bottom:8px;">
+            <strong>${activity}:</strong><br>
+            ${notes}
+          </div>
+        `;
+      } else {
+        return `<div>${step}</div>`;
+      }
+    }).join("");
+  } else if (typeof aiData.phase2 === "object") {
+    mainContent = Object.entries(aiData.phase2)
+      .map(([key, val]) => `<strong>${key}:</strong> ${val}`)
+      .join("<br>");
+  } else {
+    mainContent = aiData.phase2 || "No main phase generated.";
+  }
 
-if (Array.isArray(aiData.phase2)) {
-  // Phase 2 is an array of structured activities
-  mainContent = aiData.phase2.map((item, index) => {
-    let activity = item.activity || item.step || item.task || "";
-    let notes = item.notes || item.content || "";
-    return `
-      <div style="margin-bottom:10px;">
-        <strong>Activity ${index + 1}:</strong> ${activity}<br>
-        <em>Notes:</em> ${notes}
-      </div>
-    `;
-  }).join("");
-} else if (typeof aiData.phase2 === "object") {
-  // Phase 2 is an object, join its values
-  mainContent = Object.values(aiData.phase2).join("<br>");
-} else {
-  // Phase 2 is plain text
-  mainContent = aiData.phase2 || "No main phase generated.";
-}
+  // Phase 3
+  const reflectionContent =
+    typeof aiData.phase3 === "object"
+      ? Object.values(aiData.phase3).join("<br>")
+      : aiData.phase3;
 
-
-        const reflectionContent = typeof aiData.phase3 === "object"
-          ? Object.values(aiData.phase3).join("<br>")
-          : aiData.phase3;
-
-        document.getElementById('outputStarter').innerHTML = phase1Content.replace(/\n/g, '<br>');
+  // Display in table
+  document.getElementById('outputStarter').innerHTML = phase1Content.replace(/\n/g, '<br>');
         document.getElementById('outputMainActivities').innerHTML = mainContent.replace(/\n/g, '<br>');
         document.getElementById('outputReflection').innerHTML = reflectionContent.replace(/\n/g, '<br>');
 
