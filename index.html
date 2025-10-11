@@ -868,43 +868,58 @@
       : aiData.phase1;
 
   // ✅ Fix for Phase 2 (handles array, object, or text)
-  let mainContent = "";
-  if (Array.isArray(aiData.phase2)) {
-    mainContent = aiData.phase2.map((step, i) => {
+let mainContent = "";
+
+if (Array.isArray(aiData.phase2)) {
+  mainContent = aiData.phase2
+    .map((step, index) => {
       if (typeof step === "object") {
+        // Try to find readable fields inside each object
         const activity =
-          step.activity || step.step || step.title || step.name || `Step ${i + 1}`;
-        const notes =
-          step.notes || step.details || step.description || "";
+          step.activity ||
+          step.step ||
+          step.title ||
+          step.name ||
+          `Step ${index + 1}`;
+        const details =
+          step.details ||
+          step.description ||
+          step.notes ||
+          step.content ||
+          JSON.stringify(step, null, 2); // fallback
+
         return `
-          <div style="margin-bottom:8px;">
-            <strong>${activity}:</strong><br>
-            ${notes}
+          <div style="margin-bottom: 10px;">
+            <strong>${activity}</strong><br>
+            ${details.replace(/\n/g, "<br>")}
           </div>
         `;
       } else {
+        // If it's just plain text
         return `<div>${step}</div>`;
       }
-    }).join("");
-  } else if (typeof aiData.phase2 === "object") {
-    mainContent = Object.entries(aiData.phase2)
-      .map(([key, val]) => `<strong>${key}:</strong> ${val}`)
-      .join("<br>");
-  } else {
-    mainContent = aiData.phase2 || "No main phase generated.";
-  }
+    })
+    .join("");
+} else if (typeof aiData.phase2 === "object") {
+  // If it's a single object instead of array
+  mainContent = Object.entries(aiData.phase2)
+    .map(([key, val]) => `<strong>${key}:</strong> ${val}`)
+    .join("<br>");
+} else {
+  // If it's a string
+  mainContent = aiData.phase2 || "No main phase generated.";
+}
 
-  // Phase 3
-  const reflectionContent =
-    typeof aiData.phase3 === "object"
-      ? Object.values(aiData.phase3).join("<br>")
-      : aiData.phase3;
+// ✅ Phase 3 content
+const reflectionContent =
+  typeof aiData.phase3 === "object"
+    ? Object.values(aiData.phase3).join("<br>")
+    : aiData.phase3;
 
-  // Display in table
-  document.getElementById('outputStarter').innerHTML = phase1Content.replace(/\n/g, '<br>');
-        document.getElementById('outputMainActivities').innerHTML = mainContent.replace(/\n/g, '<br>');
-        document.getElementById('outputReflection').innerHTML = reflectionContent.replace(/\n/g, '<br>');
-
+// ✅ Display all in table
+document.getElementById("outputStarter").innerHTML = phase1Content.replace(/\n/g, "<br>");
+document.getElementById("outputMainActivities").innerHTML = mainContent;
+document.getElementById("outputReflection").innerHTML = reflectionContent.replace(/\n/g, "<br>");
       } else if (aiData.content) {
         document.getElementById('outputMainActivities').innerHTML = aiData.content.replace(/\n/g, '<br>');
       } else {
