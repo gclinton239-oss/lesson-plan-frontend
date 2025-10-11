@@ -865,9 +865,28 @@
           ? Object.values(aiData.phase1).join("<br>") 
           : aiData.phase1;
 
-        const mainContent = typeof aiData.phase2 === "object" 
-          ? Object.values(aiData.phase2).join("<br>") 
-          : aiData.phase2;
+        let mainContent = "";
+
+if (Array.isArray(aiData.phase2)) {
+  // Phase 2 is an array of structured activities
+  mainContent = aiData.phase2.map((item, index) => {
+    let activity = item.activity || item.step || item.task || "";
+    let notes = item.notes || item.content || "";
+    return `
+      <div style="margin-bottom:10px;">
+        <strong>Activity ${index + 1}:</strong> ${activity}<br>
+        <em>Notes:</em> ${notes}
+      </div>
+    `;
+  }).join("");
+} else if (typeof aiData.phase2 === "object") {
+  // Phase 2 is an object, join its values
+  mainContent = Object.values(aiData.phase2).join("<br>");
+} else {
+  // Phase 2 is plain text
+  mainContent = aiData.phase2 || "No main phase generated.";
+}
+
 
         const reflectionContent = typeof aiData.phase3 === "object"
           ? Object.values(aiData.phase3).join("<br>")
