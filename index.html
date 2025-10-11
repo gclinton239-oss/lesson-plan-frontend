@@ -867,14 +867,18 @@
       ? Object.values(aiData.phase1).join("<br>")
       : aiData.phase1;
 
-  // ✅ Improved Phase 2 Display — neatly numbered and formatted
+  // ✅ Enhanced Phase 2 Display — handles nested activities, no duration
 let mainContent = "";
 
-if (Array.isArray(aiData.phase2)) {
-  mainContent = aiData.phase2
+// Check if phase2 has "activities" array
+if (
+  aiData.phase2 &&
+  typeof aiData.phase2 === "object" &&
+  Array.isArray(aiData.phase2.activities)
+) {
+  mainContent = aiData.phase2.activities
     .map((item, index) => {
       if (typeof item === "object" && item !== null) {
-        // Extract title/activity
         const activity =
           item.activity ||
           item.title ||
@@ -882,7 +886,6 @@ if (Array.isArray(aiData.phase2)) {
           item.name ||
           `Activity ${index + 1}`;
 
-        // Extract notes
         let notesHeading = "";
         let notesContent = "";
         if (item.notes && typeof item.notes === "object") {
@@ -894,16 +897,14 @@ if (Array.isArray(aiData.phase2)) {
             : "";
         }
 
-        // Extra details or explanation
         const extraDetails =
           item.details ||
           item.description ||
           item.content ||
           "";
 
-        // Combine all together
         return `
-          <div style="margin-bottom: 18px; line-height: 1.6;">
+          <div style="margin-bottom: 16px; line-height: 1.6;">
             <strong>${index + 1}. ${activity}</strong><br>
             ${notesHeading}
             ${notesContent}
@@ -915,13 +916,6 @@ if (Array.isArray(aiData.phase2)) {
                   )}</div>`
                 : ""
             }
-            ${
-              item.image
-                ? `<div style="margin-top:10px;">
-                    <img src="${item.image}" alt="Activity Image" style="max-width:100%; border-radius:8px; box-shadow:0 2px 6px rgba(0,0,0,0.15);">
-                   </div>`
-                : ""
-            }
           </div>
         `;
       } else {
@@ -929,25 +923,21 @@ if (Array.isArray(aiData.phase2)) {
       }
     })
     .join("");
-} else if (typeof aiData.phase2 === "object" && aiData.phase2 !== null) {
-  // Handle single object
-  mainContent = Object.entries(aiData.phase2)
-    .map(([key, val], i) => {
-      if (typeof val === "object") {
-        const nested = Object.entries(val)
-          .map(([k, v]) => `<strong>${k}:</strong> ${v}`)
-          .join("<br>");
-        return `<p><strong>${i + 1}. ${key}:</strong><br>${nested}</p>`;
-      }
-      return `<p><strong>${i + 1}. ${key}:</strong> ${val}</p>`;
-    })
+}
+// If phase2 itself is an array
+else if (Array.isArray(aiData.phase2)) {
+  mainContent = aiData.phase2
+    .map((item, index) => `<p><strong>${index + 1}.</strong> ${JSON.stringify(item)}</p>`)
     .join("");
-} else {
+}
+// Otherwise fallback
+else {
   mainContent = aiData.phase2 || "No main phase generated.";
 }
 
-// ✅ Display Phase 2 nicely
+// ✅ Display nicely
 document.getElementById("outputMainActivities").innerHTML = mainContent;
+
 
 
 
