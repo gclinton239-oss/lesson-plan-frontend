@@ -867,102 +867,118 @@
       ? Object.values(aiData.phase1).join("<br>")
       : aiData.phase1;
 
- // ✅ Fix for Phase 2 (organized Teacher–Learner Activities, Notes, and Assessment)
+// ✅ Universal Phase 2 formatter (works for arrays, objects, or text)
 let mainContent = "";
 
-if (Array.isArray(aiData.phase2)) {
-  // If phase2 is an array of activity objects
-  mainContent = aiData.phase2
-    .map((activityObj, index) => {
-      // Extract the teacher–learner activity
-      const activityText =
-        typeof activityObj.activity === "string"
-          ? `${index + 1}. ${activityObj.activity}`
-          : "";
+try {
+  const phase2 = aiData.phase2;
 
-      // Extract notes (if available)
-      let notesHTML = "";
-      if (activityObj.notes) {
-        const heading =
-          activityObj.notes.heading ||
-          activityObj.notes.title ||
-          "Notes";
-        const content =
-          typeof activityObj.notes.content === "string"
-            ? activityObj.notes.content.replace(/\n/g, "<br>")
-            : JSON.stringify(activityObj.notes, null, 2);
+  // 1️⃣ If it's an array of activity objects
+  if (Array.isArray(phase2)) {
+    let activitiesHTML = "";
+    let notesHTML = "";
+    let assessmentHTML = "";
 
-        notesHTML = `
-          <div style="margin-top: 10px;">
-            <strong>${heading}</strong><br>
+    phase2.forEach((item, i) => {
+      // Extract the teacher–learner activity text
+      if (item.activity) {
+        activitiesHTML += `${i + 1}. ${item.activity}<br>`;
+      }
+
+      // Extract notes if available
+      if (item.notes && (item.notes.heading || item.notes.content)) {
+        const heading = item.notes.heading || "Notes";
+        const content = typeof item.notes.content === "string"
+          ? item.notes.content.replace(/\n/g, "<br>")
+          : JSON.stringify(item.notes, null, 2);
+
+        notesHTML += `
+          <div style="margin-top:10px;">
+            <strong style="color:#004aad;">${heading}</strong><br>
             ${content}
           </div>
         `;
       }
 
-      // Extract assessment (if available)
-      let assessmentHTML = "";
-      if (activityObj.assessment) {
-        const assessmentContent =
-          typeof activityObj.assessment === "string"
-            ? activityObj.assessment.replace(/\n/g, "<br>")
-            : JSON.stringify(activityObj.assessment, null, 2);
-        assessmentHTML = `
-          <div style="margin-top: 10px;">
-            <strong>ASSESSMENT</strong><br>
-            ${assessmentContent}
+      // Extract assessment if present
+      if (item.assessment) {
+        const assess = typeof item.assessment === "string"
+          ? item.assessment.replace(/\n/g, "<br>")
+          : JSON.stringify(item.assessment, null, 2);
+
+        assessmentHTML += `
+          <div style="margin-top:10px;">
+            <strong style="color:#004aad;">ASSESSMENT</strong><br>
+            ${assess}
           </div>
         `;
       }
+    });
 
-      return `
-        <div style="margin-bottom: 20px;">
-          <div>${activityText}</div>
-          ${notesHTML}
-          ${assessmentHTML}
+    mainContent = `
+      <div>${activitiesHTML}</div>
+      ${notesHTML}
+      ${assessmentHTML}
+    `;
+  }
+
+  // 2️⃣ If it's a single object
+  else if (typeof phase2 === "object" && phase2 !== null) {
+    let activity = phase2.activity || phase2.title || phase2.step || "";
+    let notesHTML = "";
+    let assessmentHTML = "";
+
+    if (phase2.notes) {
+      const heading = phase2.notes.heading || "Notes";
+      const content = typeof phase2.notes.content === "string"
+        ? phase2.notes.content.replace(/\n/g, "<br>")
+        : JSON.stringify(phase2.notes, null, 2);
+
+      notesHTML = `
+        <div style="margin-top:10px;">
+          <strong style="color:#004aad;">${heading}</strong><br>
+          ${content}
         </div>
       `;
-    })
-    .join("");
-} else if (typeof aiData.phase2 === "object" && aiData.phase2 !== null) {
-  // If phase2 is a single object
-  const activity =
-    aiData.phase2.activity ||
-    aiData.phase2.step ||
-    aiData.phase2.title ||
-    aiData.phase2.name ||
-    "";
+    }
 
-  const notes =
-    aiData.phase2.notes && aiData.phase2.notes.content
-      ? `<div style="margin-top: 10px;">
-          <strong>${aiData.phase2.notes.heading || "Notes"}</strong><br>
-          ${aiData.phase2.notes.content.replace(/\n/g, "<br>")}
-        </div>`
-      : "";
+    if (phase2.assessment) {
+      const assess = typeof phase2.assessment === "string"
+        ? phase2.assessment.replace(/\n/g, "<br>")
+        : JSON.stringify(phase2.assessment, null, 2);
 
-  const assessment =
-    aiData.phase2.assessment && typeof aiData.phase2.assessment === "string"
-      ? `<div style="margin-top: 10px;">
-          <strong>ASSESSMENT</strong><br>
-          ${aiData.phase2.assessment.replace(/\n/g, "<br>")}
-        </div>`
-      : "";
+      assessmentHTML = `
+        <div style="margin-top:10px;">
+          <strong style="color:#004aad;">ASSESSMENT</strong><br>
+          ${assess}
+        </div>
+      `;
+    }
 
-  mainContent = `
-    <div style="margin-bottom: 15px;">
+    mainContent = `
       <div>1. ${activity}</div>
-      ${notes}
-      ${assessment}
-    </div>
-  `;
-} else {
-  // Fallback if phase2 is plain text
-  mainContent = aiData.phase2 || "No main phase generated.";
+      ${notesHTML}
+      ${assessmentHTML}
+    `;
+  }
+
+  // 3️⃣ If it's just plain text
+  else if (typeof phase2 === "string") {
+    mainContent = phase2.replace(/\n/g, "<br>");
+  }
+
+  // 4️⃣ Fallback
+  else {
+    mainContent = "No main phase generated.";
+  }
+} catch (err) {
+  console.error("Error displaying Phase 2:", err);
+  mainContent = "Error displaying Phase 2 content.";
 }
 
-// ✅ Display Phase 2 correctly
+// ✅ Display it on page
 document.getElementById("outputMainActivities").innerHTML = mainContent;
+
 
 // ✅ Phase 3 content
 const reflectionContent =
