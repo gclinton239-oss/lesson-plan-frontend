@@ -867,112 +867,102 @@
       ? Object.values(aiData.phase1).join("<br>")
       : aiData.phase1;
 
-  // -----------------------------
-// Robust Phase 2 display (handles nested notes.content types)
-// -----------------------------
-function normalizeToHtmlText(value) {
-  // Turn any type of value into a readable HTML string.
-  if (value === null || value === undefined) return "";
-  if (typeof value === "string") return value;
-  if (typeof value === "number" || typeof value === "boolean") return String(value);
-
-  // If it's an array, join items with line breaks (recursively normalize)
-  if (Array.isArray(value)) {
-    return value.map(v => normalizeToHtmlText(v)).join("<br>");
-  }
-
-  // If it's an object, prefer readable fields if present, otherwise stringify
-  if (typeof value === "object") {
-    // If object has common fields, prefer them
-    if (value.content && typeof value.content !== "object") return String(value.content);
-    if (value.text && typeof value.text !== "object") return String(value.text);
-    // Otherwise join its values
-    const vals = Object.values(value).map(v => normalizeToHtmlText(v)).filter(Boolean);
-    return vals.length ? vals.join("<br>") : JSON.stringify(value, null, 2);
-  }
-
-  // Fallback stringify
-  return String(value);
-}
-
+ // ✅ Fix for Phase 2 (organized Teacher–Learner Activities, Notes, and Assessment)
 let mainContent = "";
 
-// Case: phase2 contains activities array (common)
-if (
-  aiData.phase2 &&
-  typeof aiData.phase2 === "object" &&
-  Array.isArray(aiData.phase2.activities)
-) {
-  mainContent = aiData.phase2.activities
+if (Array.isArray(aiData.phase2)) {
+  // If phase2 is an array of activity objects
+  mainContent = aiData.phase2
     .map((activityObj, index) => {
+      // Extract the teacher–learner activity
       const activityText =
-        activityObj.activity ||
-        activityObj.title ||
-        activityObj.step ||
-        activityObj.name ||
-        `Activity ${index + 1}`;
+        typeof activityObj.activity === "string"
+          ? `${index + 1}. ${activityObj.activity}`
+          : "";
 
-      let notesHeading = "";
-      let notesContentHtml = "";
+      // Extract notes (if available)
+      let notesHTML = "";
+      if (activityObj.notes) {
+        const heading =
+          activityObj.notes.heading ||
+          activityObj.notes.title ||
+          "Notes";
+        const content =
+          typeof activityObj.notes.content === "string"
+            ? activityObj.notes.content.replace(/\n/g, "<br>")
+            : JSON.stringify(activityObj.notes, null, 2);
 
-      if (activityObj.notes && typeof activityObj.notes === "object") {
-        if (activityObj.notes.heading) {
-          notesHeading = `<h4 style="margin:6px 0 4px;">${normalizeToHtmlText(activityObj.notes.heading)}</h4>`;
-        }
-
-        // Normalize notes.content safely (handles string, array, object)
-        const rawNotesContent = activityObj.notes.content ?? activityObj.notes.text ?? activityObj.notes;
-        notesContentHtml = normalizeToHtmlText(rawNotesContent);
-        if (notesContentHtml) {
-          // convert any remaining \n to <br> (already handled for strings but safe)
-          notesContentHtml = notesContentHtml.replace ? notesContentHtml.replace(/\n/g, "<br>") : notesContentHtml;
-          notesContentHtml = `<div style="margin:0 0 8px;">${notesContentHtml}</div>`;
-        }
+        notesHTML = `
+          <div style="margin-top: 10px;">
+            <strong>${heading}</strong><br>
+            ${content}
+          </div>
+        `;
       }
 
-      // Extra details if present
-      const extraDetails = normalizeToHtmlText(activityObj.details || activityObj.description || activityObj.content || "");
+      // Extract assessment (if available)
+      let assessmentHTML = "";
+      if (activityObj.assessment) {
+        const assessmentContent =
+          typeof activityObj.assessment === "string"
+            ? activityObj.assessment.replace(/\n/g, "<br>")
+            : JSON.stringify(activityObj.assessment, null, 2);
+        assessmentHTML = `
+          <div style="margin-top: 10px;">
+            <strong>ASSESSMENT</strong><br>
+            ${assessmentContent}
+          </div>
+        `;
+      }
 
       return `
-        <div style="margin-bottom:14px; line-height:1.6;">
-          <strong>${index + 1}. ${normalizeToHtmlText(activityText)}</strong><br>
-          ${notesHeading}
-          ${notesContentHtml}
-          ${extraDetails ? `<div style="margin-top:6px;">${extraDetails.replace(/\n/g,"<br>")}</div>` : ""}
+        <div style="margin-bottom: 20px;">
+          <div>${activityText}</div>
+          ${notesHTML}
+          ${assessmentHTML}
         </div>
       `;
     })
     .join("");
-}
-// If phase2 itself is an array (fallback)
-else if (Array.isArray(aiData.phase2)) {
-  mainContent = aiData.phase2
-    .map((item, index) => `<p><strong>${index + 1}.</strong> ${normalizeToHtmlText(item)}</p>`)
-    .join("");
-}
-// If phase2 is object but doesn't have .activities (handle keys)
-else if (typeof aiData.phase2 === "object" && aiData.phase2 !== null) {
-  // Exclude duration if present (you wanted duration removed)
-  const { duration, ...rest } = aiData.phase2;
-  mainContent = Object.entries(rest)
-    .map(([key, val], i) => `<p><strong>${i+1}. ${key}:</strong><br>${normalizeToHtmlText(val).replace(/\n/g,"<br>")}</p>`)
-    .join("");
-}
-// Otherwise fallback to plain text
-else {
-  mainContent = normalizeToHtmlText(aiData.phase2 || "No main phase generated.");
+} else if (typeof aiData.phase2 === "object" && aiData.phase2 !== null) {
+  // If phase2 is a single object
+  const activity =
+    aiData.phase2.activity ||
+    aiData.phase2.step ||
+    aiData.phase2.title ||
+    aiData.phase2.name ||
+    "";
+
+  const notes =
+    aiData.phase2.notes && aiData.phase2.notes.content
+      ? `<div style="margin-top: 10px;">
+          <strong>${aiData.phase2.notes.heading || "Notes"}</strong><br>
+          ${aiData.phase2.notes.content.replace(/\n/g, "<br>")}
+        </div>`
+      : "";
+
+  const assessment =
+    aiData.phase2.assessment && typeof aiData.phase2.assessment === "string"
+      ? `<div style="margin-top: 10px;">
+          <strong>ASSESSMENT</strong><br>
+          ${aiData.phase2.assessment.replace(/\n/g, "<br>")}
+        </div>`
+      : "";
+
+  mainContent = `
+    <div style="margin-bottom: 15px;">
+      <div>1. ${activity}</div>
+      ${notes}
+      ${assessment}
+    </div>
+  `;
+} else {
+  // Fallback if phase2 is plain text
+  mainContent = aiData.phase2 || "No main phase generated.";
 }
 
-// Display outputs (ensure these lines are inside the same block where phase1Content/reflectionContent are defined)
-document.getElementById("outputStarter").innerHTML = (aiData.phase1 || "")
-  .toString()
-  .replace(/\n/g, "<br>");
-
+// ✅ Display Phase 2 correctly
 document.getElementById("outputMainActivities").innerHTML = mainContent;
-
-document.getElementById("outputReflection").innerHTML = (aiData.phase3 || "")
-  .toString()
-  .replace(/\n/g, "<br>");
 
 // ✅ Phase 3 content
 const reflectionContent =
