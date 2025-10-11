@@ -867,74 +867,74 @@
       ? Object.values(aiData.phase1).join("<br>")
       : aiData.phase1;
 
-  // ✅ Fix for Phase 2 (handles array, object, or text, including nested notes)
-let mainContent = "";
-
-// If phase2 is an array (most common case)
-if (Array.isArray(aiData.phase2)) {
-  mainContent = aiData.phase2
-    .map((item, index) => {
-      if (typeof item === "object" && item !== null) {
-        const title =
-          item.activity ||
-          item.title ||
-          item.step ||
-          item.name ||
-          `Activity ${index + 1}`;
-
-        // Handle nested notes object
-        let noteHeading = "";
-        let noteContent = "";
-
-        if (item.notes && typeof item.notes === "object") {
-          noteHeading = item.notes.heading
-            ? `<em>${item.notes.heading}</em><br>`
-            : "";
-          noteContent = item.notes.content
-            ? item.notes.content.replace(/\n/g, "<br>")
-            : "";
+  // Function to render a list with optional bolding/numbering
+function renderList(list, tag = 'ol') {
+    if (!list || list.length === 0) return '';
+    let html = `<${tag} style="padding-left: 20px;">`;
+    list.forEach(item => {
+        // If the item is a string, just display it
+        if (typeof item === 'string') {
+            html += `<li style="margin-bottom: 5px;">${item}</li>`;
+        } 
+        // If the item is an object, try to render it as a key/value pair
+        else if (typeof item === 'object' && item !== null) {
+            const keys = Object.keys(item);
+            if (keys.length > 0) {
+                const key = keys[0];
+                const value = item[key];
+                html += `<li style="margin-bottom: 5px;"><strong>${key}</strong>: ${value}</li>`;
+            }
         }
-
-        const details =
-          item.details ||
-          item.description ||
-          item.content ||
-          item.notes?.content ||
-          "";
-
-        return `
-          <div style="margin-bottom: 16px;">
-            <strong>${title}</strong><br>
-            ${noteHeading}
-            ${noteContent}
-            ${details ? `<div>${details.replace(/\n/g, "<br>")}</div>` : ""}
-          </div>
-        `;
-      }
-
-      // If it's plain text
-      return `<div>${item}</div>`;
-    })
-    .join("");
+    });
+    html += `</${tag}>`;
+    return html;
 }
-// If phase2 is a single object
-else if (typeof aiData.phase2 === "object" && aiData.phase2 !== null) {
-  mainContent = Object.entries(aiData.phase2)
-    .map(([key, val]) => {
-      if (typeof val === "object" && val !== null) {
-        return `<strong>${key}:</strong> ${JSON.stringify(val, null, 2).replace(
-          /\n/g,
-          "<br>"
-        )}`;
-      }
-      return `<strong>${key}:</strong> ${val}`;
-    })
-    .join("<br>");
+
+// Function to render the structured Phase 2 Content
+function renderStructuredPhase2(phase2Data) {
+    if (!phase2Data || typeof phase2Data !== 'object') {
+        return "No structured main phase data generated.";
+    }
+    
+    let html = '';
+
+    // 1. ACTIVITIES (Render as a numbered list)
+    if (phase2Data.activities && Array.isArray(phase2Data.activities)) {
+        html += renderList(phase2Data.activities, 'ol');
+    }
+
+    // 2. CONTENT (Definitions, Types, Methods)
+    if (phase2Data.content && typeof phase2Data.content === 'object') {
+        for (const title in phase2Data.content) {
+            // Apply a strong underline/separation style for the content headings
+            html += `<div style="font-size: 1.1em; font-weight: bold; margin-top: 15px; margin-bottom: 5px; text-decoration: underline;">${title}</div>`;
+            
+            const contentItems = phase2Data.content[title];
+            if (Array.isArray(contentItems)) {
+                // Render content items as an un-numbered list
+                html += renderList(contentItems, 'ul');
+            } else if (typeof contentItems === 'string') {
+                html += `<p style="margin-left: 20px;">${contentItems}</p>`;
+            }
+        }
+    }
+
+    // 3. ASSESSMENT (Render as a numbered list with a clear heading)
+    if (phase2Data.assessment && Array.isArray(phase2Data.assessment)) {
+        // Apply strong, separate styling for the ASSESSMENT heading
+        html += `<div style="font-size: 1.2em; font-weight: bolder; margin-top: 20px; border-bottom: 2px solid #333; display: inline-block;">ASSESSMENT</div>`;
+        html += renderList(phase2Data.assessment, 'ol');
+    }
+    
+    return html;
 }
-// Fallback if it's text
-else {
-  mainContent = aiData.phase2 || "No main phase generated.";
-}
+
+// --- MAIN OUTPUT LOGIC ---
+
+// ✅ Fix for Phase 2 (Call the new structured renderer)
+const phase2Data = aiData.phase2; // Assuming aiData.phase2 holds the structured object
+mainContent = renderStructuredPhase2(phase2Data);
+
 
 // ✅ Display outputs
 document.getElementById("outputStarter").innerHTML = (aiData.phase1 || "")
@@ -945,8 +945,7 @@ document.getElementById("outputMainActivities").innerHTML = mainContent;
 
 document.getElementById("outputReflection").innerHTML = (aiData.phase3 || "")
   .toString()
-  .replace(/\n/g, "<br>");
-
+  .replace(/\n/g, "<br>")
 
 // ✅ Phase 3 content
 const reflectionContent =
