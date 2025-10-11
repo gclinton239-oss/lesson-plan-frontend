@@ -867,85 +867,88 @@
       ? Object.values(aiData.phase1).join("<br>")
       : aiData.phase1;
 
-  // ✅ Fix for Phase 2 (handles array, object, or text, including nested notes)
+  // ✅ Improved Phase 2 Display — neatly numbered and formatted
 let mainContent = "";
 
-// If phase2 is an array (most common case)
 if (Array.isArray(aiData.phase2)) {
   mainContent = aiData.phase2
     .map((item, index) => {
       if (typeof item === "object" && item !== null) {
-        const title =
+        // Extract title/activity
+        const activity =
           item.activity ||
           item.title ||
           item.step ||
           item.name ||
           `Activity ${index + 1}`;
 
-        // Handle nested notes object
-        let noteHeading = "";
-        let noteContent = "";
-
+        // Extract notes
+        let notesHeading = "";
+        let notesContent = "";
         if (item.notes && typeof item.notes === "object") {
-          noteHeading = item.notes.heading
-            ? `<em>${item.notes.heading}</em><br>`
+          notesHeading = item.notes.heading
+            ? `<h4 style="margin-top:8px;">${item.notes.heading}</h4>`
             : "";
-          noteContent = item.notes.content
-            ? item.notes.content.replace(/\n/g, "<br>")
+          notesContent = item.notes.content
+            ? `<p>${item.notes.content.replace(/\n/g, "<br>")}</p>`
             : "";
         }
 
-        const details =
+        // Extra details or explanation
+        const extraDetails =
           item.details ||
           item.description ||
           item.content ||
-          item.notes?.content ||
           "";
 
+        // Combine all together
         return `
-          <div style="margin-bottom: 16px;">
-            <strong>${title}</strong><br>
-            ${noteHeading}
-            ${noteContent}
-            ${details ? `<div>${details.replace(/\n/g, "<br>")}</div>` : ""}
+          <div style="margin-bottom: 18px; line-height: 1.6;">
+            <strong>${index + 1}. ${activity}</strong><br>
+            ${notesHeading}
+            ${notesContent}
+            ${
+              extraDetails
+                ? `<div style="margin-top:6px;">${extraDetails.replace(
+                    /\n/g,
+                    "<br>"
+                  )}</div>`
+                : ""
+            }
+            ${
+              item.image
+                ? `<div style="margin-top:10px;">
+                    <img src="${item.image}" alt="Activity Image" style="max-width:100%; border-radius:8px; box-shadow:0 2px 6px rgba(0,0,0,0.15);">
+                   </div>`
+                : ""
+            }
           </div>
         `;
+      } else {
+        return `<p><strong>${index + 1}.</strong> ${item}</p>`;
       }
-
-      // If it's plain text
-      return `<div>${item}</div>`;
     })
     .join("");
-}
-// If phase2 is a single object
-else if (typeof aiData.phase2 === "object" && aiData.phase2 !== null) {
+} else if (typeof aiData.phase2 === "object" && aiData.phase2 !== null) {
+  // Handle single object
   mainContent = Object.entries(aiData.phase2)
-    .map(([key, val]) => {
-      if (typeof val === "object" && val !== null) {
-        return `<strong>${key}:</strong> ${JSON.stringify(val, null, 2).replace(
-          /\n/g,
-          "<br>"
-        )}`;
+    .map(([key, val], i) => {
+      if (typeof val === "object") {
+        const nested = Object.entries(val)
+          .map(([k, v]) => `<strong>${k}:</strong> ${v}`)
+          .join("<br>");
+        return `<p><strong>${i + 1}. ${key}:</strong><br>${nested}</p>`;
       }
-      return `<strong>${key}:</strong> ${val}`;
+      return `<p><strong>${i + 1}. ${key}:</strong> ${val}</p>`;
     })
-    .join("<br>");
-}
-// Fallback if it's text
-else {
+    .join("");
+} else {
   mainContent = aiData.phase2 || "No main phase generated.";
 }
 
-// ✅ Display outputs
-document.getElementById("outputStarter").innerHTML = (aiData.phase1 || "")
-  .toString()
-  .replace(/\n/g, "<br>");
-
+// ✅ Display Phase 2 nicely
 document.getElementById("outputMainActivities").innerHTML = mainContent;
 
-document.getElementById("outputReflection").innerHTML = (aiData.phase3 || "")
-  .toString()
-  .replace(/\n/g, "<br>");
 
 
 // ✅ Phase 3 content
