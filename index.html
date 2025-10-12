@@ -353,10 +353,6 @@
             </select>
           </div>
           <div class="compact-group">
-  <label for="weekEnding">Week Ending:</label>
-  <input type="text" id="weekEnding" name="weekEnding" placeholder="e.g., 11th October 2025" required>
-</div>
-          <div class="compact-group">
             <label>Date</label>
             <input type="text" id="date" placeholder="12/04" />
           </div>
@@ -723,30 +719,55 @@
       </div>
       <div id="lessonPlanOutput">
         <table class="lesson-table">
-  <tr>
-    <th colspan="11" style="font-size:14pt;">
-      <strong><span id="outputDistrictHeader">WEEKLY LESSON PLAN</span></strong>
-    </th>
-  </tr>
-  <tr>
-    <th colspan="11"><span id="outputClass"></span></th>  <!-- ✅ Added back -->
-  </tr>
-  <tr>
-    <th colspan="11"><span id="outputWeekNum"></span></th>
-  </tr>
-  <tr>
-    <td colspan="2"><strong>Class size:</strong> <span id="outputClassSize"></span></td>
-    <td colspan="2"><strong>Duration:</strong> <span id="outputDuration"></span></td>
-    <td colspan="3"><strong>TLRs:</strong> <span id="outputTlrs"></span></td>
-    <td colspan="4"><strong>Date:</strong> <span id="outputDate"></span></td>
-  </tr>
-  <tr>
-    <td colspan="2"><strong>Lesson:</strong> <span id="outputLessonTitle"></span></td>
-    <td colspan="2"><strong>Day:</strong> <span id="outputDayInHeader"></span></td>
-    <td colspan="7"><strong>Reference:</strong> <span id="outputReferences"></span></td>
-  </tr>
-</table>
-
+          <tr>
+            <th colspan="11" style="font-size:14pt;">
+              <strong><span id="outputDistrictHeader">WEEKLY LESSON PLAN</span></strong>
+            </th>
+          </tr>
+          <tr>
+            <th colspan="11"><span id="outputClass"></span></th>
+          </tr>
+          <tr>
+            <th colspan="11">WEEK <span id="outputWeekNum"></span></th>
+          </tr>
+          <tr>
+            <td colspan="2"><strong>Class size:</strong> <span id="outputClassSize"></span></td>
+            <td colspan="2"><strong>Duration:</strong> <span id="outputDuration"></span></td>
+            <td colspan="3"><strong>TLRs:</strong> <span id="outputTlrs"></span></td>
+            <td colspan="4"><strong>Date:</strong> <span id="outputDate"></span></td>
+          </tr>
+          <tr>
+            <td colspan="2"><strong>Lesson:</strong> <span id="outputLessonTitle"></span></td>
+            <td colspan="2"><strong>Day:</strong> <span id="outputDayInHeader"></span></td>
+            <td colspan="7"><strong>Reference:</strong> <span id="outputReferences"></span></td>
+          </tr>
+          <tr>
+            <td colspan="4"><strong>Strand:</strong> <span id="outputStrand"></span></td>
+            <td colspan="7"><strong>Sub-strand:</strong> <span id="outputSubStrand"></span></td>
+          </tr>
+          <tr>
+            <td colspan="4"><strong>Content standard:</strong> <span id="outputContentStandard"></span></td>
+            <td colspan="7"><strong>Indicator:</strong> <span id="outputIndicator"></span></td>
+          </tr>
+          <tr>
+            <td colspan="11"><strong>Performance Indicator:</strong> <span id="outputPerformanceIndicator"></span></td>
+          </tr>
+          <tr>
+            <td colspan="11"><strong>Core Competencies:</strong> <span id="outputCoreCompetencies"></span></td>
+          </tr>
+          <tr>
+            <th class="day-header">DAY</th>
+            <th class="starter">PHASE 1/<br>STARTER</th>
+            <th colspan="7" class="main">PHASE 2 / MAIN</th>
+            <th colspan="2" class="reflection">PHASE 3 / REFLECTION</th>
+          </tr>
+          <tr>
+            <td><span id="outputDayInTable"></span></td>
+            <td class="content"><div id="outputStarter"></div></td>
+            <td colspan="7" class="content"><div id="outputMainActivities"></div></td>
+            <td colspan="2" class="content"><div id="outputReflection"></div></td>
+          </tr>
+        </table>
       </div>
     </div>
   </div>
@@ -795,7 +816,6 @@
       alert("Please select a week number.");
       return;
     }
-    const weekEnding = v('weekEnding');
 
     // ✅ Format Class as "BASIC 7"
     const rawClass = v('class') || 'B7';
@@ -804,7 +824,7 @@
 
     // --- Populate Fixed Fields ---
     document.getElementById('outputClass').textContent = basicClass;
-    document.getElementById('outputWeekNum').textContent = `Week ${weekNum} | Week Ending: ${weekEnding}`; // ✅ Updated
+    document.getElementById('outputWeekNum').textContent = weekNum;
     document.getElementById('outputClassSize').textContent = v('classSize');
     document.getElementById('outputDuration').textContent = v('duration');
     document.getElementById('outputLessonTitle').textContent = v('lessonTitle');
