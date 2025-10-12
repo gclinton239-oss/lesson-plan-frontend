@@ -149,6 +149,8 @@
         line-height: 1.4;
         vertical-align: top;
         word-wrap: break-word;
+        /* <<< NEW: Critical for long strings/raw JSON >>> */
+        overflow-wrap: break-word; /* LINE 126 */
         height: 24pt;
       }
       .lesson-table th {
@@ -156,10 +158,10 @@
         font-weight: bold;
         text-align: center;
       }
-      .lesson-table .day-header { width: 8%; }
-      .lesson-table .starter { width: 12%; }
-      .lesson-table .main { width: 60%; }
-      .lesson-table .reflection { width: 20%; }
+      .lesson-table .day-header { width: 7%; }
+      .lesson-table .starter { width: 11%; }
+      .lesson-table .main { width: 63%; }
+      .lesson-table .reflection { width: 19%; }
       .content {
         min-height: 90px;
         line-height: 1.5;
@@ -692,11 +694,11 @@
           </div>
         </div>
         <div class="button-group">
-          <button id="generateBtn" onclick="handleAction(generateLessonPlan)">Generate Plan</button>
-          <button id="printBtn" onclick="handleAction(printPlan)">Print Plan</button>
-          <button id="saveBtn" onclick="handleAction(savePlan)">Save Plan</button>
-          <button id="loadBtn" onclick="handleAction(loadLastPlan)">Load Last Plan</button>
-          <button id="clearBtn" onclick="handleAction(clearForm)">Clear Form</button>
+          <button id="generateBtn" onclick="generateLessonPlan()">Generate Plan</button>
+          <button id="printBtn" onclick="printPlan()">Print Plan</button>
+          <button id="saveBtn" onclick="savePlan()">Save Plan</button>
+          <button id="loadBtn" onclick="loadLastPlan()">Load Last Plan</button>
+          <button id="clearBtn" onclick="clearForm()">Clear Form</button>
         </div>
         <div id="loader"></div>
       </div>
@@ -767,15 +769,6 @@
   const loader = document.getElementById('loader');
   function showLoader() { loader.style.display = 'block'; }
   function hideLoader() { loader.style.display = 'none'; }
-
-  function handleAction(actionFn) {
-    showLoader();
-    setTimeout(() => {
-      try { actionFn(); }
-      catch (e) { console.error(e); }
-      finally { setTimeout(hideLoader, 300); }
-    }, 100);
-  }
 
   // ✅ Connect to Flask Backend (Render)
   async function generateAIPlan(payload) {
@@ -936,27 +929,23 @@ const phase2Data = aiData.phase2; // Assuming aiData.phase2 holds the structured
 mainContent = renderStructuredPhase2(phase2Data);
 
 
-// ✅ Display outputs
-document.getElementById("outputStarter").innerHTML = (aiData.phase1 || "")
-  .toString()
-  .replace(/\n/g, "<br>");
+// --- Final Content Processing (Ensures Newlines are <br>) ---
+// Phase 1 content is already in phase1Content (defined earlier)
+const finalPhase1Content = phase1Content.toString().replace(/\n/g, "<br>");
 
-document.getElementById("outputMainActivities").innerHTML = mainContent;
-
-document.getElementById("outputReflection").innerHTML = (aiData.phase3 || "")
-  .toString()
-  .replace(/\n/g, "<br>")
-
-// ✅ Phase 3 content
-const reflectionContent =
-  typeof aiData.phase3 === "object"
+// Phase 3 content: Handles both object and string formats, then replaces newlines
+const finalReflectionContent =
+  (typeof aiData.phase3 === "object"
     ? Object.values(aiData.phase3).join("<br>")
-    : aiData.phase3;
+    : aiData.phase3 || ""
+  ).toString().replace(/\n/g, "<br>");
 
-// ✅ Display all in table
-document.getElementById("outputStarter").innerHTML = phase1Content.replace(/\n/g, "<br>");
+// --- Display Outputs in Table ---
+document.getElementById("outputStarter").innerHTML = finalPhase1Content;
 document.getElementById("outputMainActivities").innerHTML = mainContent;
-document.getElementById("outputReflection").innerHTML = reflectionContent.replace(/\n/g, "<br>");
+document.getElementById("outputReflection").innerHTML = finalReflectionContent;
+
+// The script continues with the 'else if (aiData.content) {' block immediately below this.
       } else if (aiData.content) {
         document.getElementById('outputMainActivities').innerHTML = aiData.content.replace(/\n/g, '<br>');
       } else {
