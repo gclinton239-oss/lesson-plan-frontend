@@ -353,6 +353,10 @@
             </select>
           </div>
           <div class="compact-group">
+  <label for="weekEnding">Week Ending:</label>
+  <input type="text" id="weekEnding" name="weekEnding" placeholder="e.g., 11th October 2025" required>
+</div>
+          <div class="compact-group">
             <label>Date</label>
             <input type="text" id="date" placeholder="12/04" />
           </div>
@@ -816,6 +820,7 @@
       alert("Please select a week number.");
       return;
     }
+    const weekEnding = v('weekEnding');
 
     // ✅ Format Class as "BASIC 7"
     const rawClass = v('class') || 'B7';
@@ -824,7 +829,7 @@
 
     // --- Populate Fixed Fields ---
     document.getElementById('outputClass').textContent = basicClass;
-    document.getElementById('outputWeekNum').textContent = weekNum;
+    document.getElementById('outputWeekNum').textContent = `Week ${weekNum} | Week Ending: ${weekEnding}`; // ✅ Updated
     document.getElementById('outputClassSize').textContent = v('classSize');
     document.getElementById('outputDuration').textContent = v('duration');
     document.getElementById('outputLessonTitle').textContent = v('lessonTitle');
