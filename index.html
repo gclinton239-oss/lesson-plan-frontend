@@ -201,9 +201,11 @@
   }
 }
 
-/* === HIDE LOGO & FORM ON PRINT === */
-.no-print {
-  display: none !important;
+/* === HIDE LOGO & FORM ONLY WHEN PRINTING === */
+@media print {
+  .no-print {
+    display: none !important;
+  }
 }
 
     /* Welcome Page Styles */
