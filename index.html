@@ -695,7 +695,6 @@
         <div class="button-group">
           <button id="generateBtn" onclick="generateLessonPlan()">Generate Plan</button>
           <button id="printBtn" onclick="printPlan()">Print Plan</button>
-          <button id="downloadPdfBtn" onclick="downloadAsPDF()">Download PDF</button>
           <button id="saveBtn" onclick="savePlan()">Save Plan</button>
           <button id="loadBtn" onclick="loadLastPlan()">Load Last Plan</button>
           <button id="clearBtn" onclick="clearForm()">Clear Form</button>
@@ -950,35 +949,6 @@
       }
       window.print();
     }
-
-    function downloadAsPDF() {
-  const output = document.getElementById('lessonPlanOutput');
-
-  if (!output || output.style.display === 'none') {
-    alert("Please click 'Generate Plan' first.");
-    return;
-  }
-
-  // Generate filename automatically
-  const classText = document.getElementById('outputClass').textContent.replace(/\s+/g, '') || 'Class';
-  const subjectText = document.getElementById('subject').value.replace(/[^a-zA-Z0-9]/g, '') || 'Subject';
-  const weekText = document.getElementById('outputWeekNum').textContent || '1';
-
-  const filename = `${classText}_${subjectText}_Week${weekText}.pdf`;
-
-  // Create a temporary invisible download link
-  const link = document.createElement('a');
-  link.download = filename; 
-  document.body.appendChild(link);
-
-  // Trigger print dialog (perfect PDF)
-  window.print();
-
-  // Cleanup
-  setTimeout(() => {
-    link.remove();
-  }, 500);
-}
 
     function savePlan() {
       const data = {};
